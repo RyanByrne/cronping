@@ -29,6 +29,7 @@ export default function DashboardPage() {
     gracePeriod: 300,
   })
   const [creating, setCreating] = useState(false)
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null)
 
   useEffect(() => {
     fetchMonitors()
@@ -86,6 +87,12 @@ export default function DashboardPage() {
     }
   }
 
+  const copyToClipboard = (text: string, slug: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedSlug(slug)
+    setTimeout(() => setCopiedSlug(null), 2000)
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "up":
@@ -115,7 +122,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-6 py-8 max-w-3xl">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold">Monitors</h1>
@@ -131,7 +138,7 @@ export default function DashboardPage() {
 
         {/* Create Form Modal */}
         {showCreateForm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md">
               <h2 className="text-xl font-semibold mb-4">Create Monitor</h2>
               <form onSubmit={createMonitor}>
@@ -142,7 +149,7 @@ export default function DashboardPage() {
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Daily backup"
+                      placeholder="e.g. Nightly backup"
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
                       required
                     />
@@ -173,7 +180,7 @@ export default function DashboardPage() {
                       <option value={86400}>24 hours</option>
                     </select>
                     <p className="text-xs text-zinc-500 mt-1">
-                      How long to wait after expected ping before alerting
+                      If we don&apos;t receive a ping within this time, we&apos;ll alert you
                     </p>
                   </div>
                 </div>
@@ -202,23 +209,37 @@ export default function DashboardPage() {
         {loading ? (
           <div className="text-center py-12 text-zinc-500">Loading...</div>
         ) : monitors.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-zinc-500 mb-4">No monitors yet</div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8">
+            <h2 className="text-xl font-semibold mb-4">How CronPing works</h2>
+            <div className="space-y-4 text-zinc-400 mb-6">
+              <div className="flex gap-3">
+                <span className="text-emerald-400 font-bold">1.</span>
+                <p>Create a monitor for your cron job</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-emerald-400 font-bold">2.</span>
+                <p>Add the ping URL to the end of your cron job</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-emerald-400 font-bold">3.</span>
+                <p>If the ping doesn&apos;t arrive, you get an email</p>
+              </div>
+            </div>
             <button
               onClick={() => setShowCreateForm(true)}
-              className="text-emerald-400 hover:text-emerald-300"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-lg transition-colors"
             >
-              Create your first monitor →
+              Create your first monitor
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {monitors.map((monitor) => (
               <div
                 key={monitor.id}
                 className="bg-zinc-900 border border-zinc-800 rounded-xl p-6"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-3 h-3 rounded-full ${getStatusColor(monitor.status)}`}></div>
                     <div>
@@ -226,7 +247,7 @@ export default function DashboardPage() {
                       <p className="text-zinc-500 text-sm">
                         {monitor.lastPing
                           ? `Last ping: ${formatDistanceToNow(new Date(monitor.lastPing))} ago`
-                          : "No pings yet"}
+                          : "Waiting for first ping..."}
                       </p>
                     </div>
                   </div>
@@ -234,38 +255,72 @@ export default function DashboardPage() {
                     <span className={`text-xs px-2 py-1 rounded ${
                       monitor.status === "up" ? "bg-emerald-500/20 text-emerald-400" :
                       monitor.status === "down" ? "bg-red-500/20 text-red-400" :
-                      "bg-zinc-700 text-zinc-400"
+                      "bg-amber-500/20 text-amber-400"
                     }`}>
-                      {monitor.status.toUpperCase()}
+                      {monitor.status === "new" ? "WAITING" : monitor.status.toUpperCase()}
                     </span>
                     <button
                       onClick={() => deleteMonitor(monitor.id)}
                       className="text-zinc-500 hover:text-red-400 transition-colors p-2"
+                      title="Delete monitor"
                     >
                       🗑️
                     </button>
                   </div>
                 </div>
 
-                <div className="mt-4 bg-zinc-800 rounded-lg p-4">
-                  <p className="text-xs text-zinc-500 mb-2">Ping URL</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-sm text-emerald-400 break-all">
-                      {baseUrl}/api/ping/{monitor.slug}
-                    </code>
+                {/* Setup instructions for new monitors */}
+                {monitor.status === "new" && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-4">
+                    <p className="text-amber-400 text-sm font-medium mb-3">Next step: Add this to your cron job</p>
+                    <p className="text-zinc-400 text-sm mb-3">
+                      Append this curl command to the end of your scheduled task. When the task runs, it will ping this URL.
+                      If we don&apos;t hear from it within {monitor.gracePeriod / 60} minute{monitor.gracePeriod > 60 ? "s" : ""}, we&apos;ll email you.
+                    </p>
+                  </div>
+                )}
+
+                {/* Ping URL */}
+                <div className="bg-zinc-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-zinc-500">Ping URL</p>
                     <button
-                      onClick={() => navigator.clipboard.writeText(`${baseUrl}/api/ping/${monitor.slug}`)}
-                      className="text-zinc-500 hover:text-white transition-colors shrink-0"
+                      onClick={() => copyToClipboard(`${baseUrl}/api/ping/${monitor.slug}`, monitor.slug)}
+                      className="text-xs text-zinc-500 hover:text-white transition-colors"
                     >
-                      📋
+                      {copiedSlug === monitor.slug ? "Copied!" : "Copy"}
                     </button>
                   </div>
+                  <code className="text-sm text-emerald-400 break-all block">
+                    {baseUrl}/api/ping/{monitor.slug}
+                  </code>
                 </div>
 
+                {/* Example usage */}
+                {monitor.status === "new" && (
+                  <div className="bg-zinc-800 rounded-lg p-4 mt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-zinc-500">Example crontab line</p>
+                      <button
+                        onClick={() => copyToClipboard(
+                          `0 * * * * /your/script.sh && curl -fsS ${baseUrl}/api/ping/${monitor.slug}`,
+                          monitor.slug + "-example"
+                        )}
+                        className="text-xs text-zinc-500 hover:text-white transition-colors"
+                      >
+                        {copiedSlug === monitor.slug + "-example" ? "Copied!" : "Copy"}
+                      </button>
+                    </div>
+                    <code className="text-sm text-zinc-300 break-all block">
+                      0 * * * * /your/script.sh && curl -fsS {baseUrl}/api/ping/{monitor.slug}
+                    </code>
+                  </div>
+                )}
+
                 <div className="mt-4 flex gap-6 text-sm text-zinc-500">
-                  <span>{monitor._count.pings} pings</span>
-                  <span>{monitor._count.alerts} alerts</span>
-                  <span>Grace: {monitor.gracePeriod / 60}m</span>
+                  <span>{monitor._count.pings} ping{monitor._count.pings !== 1 ? "s" : ""}</span>
+                  <span>{monitor._count.alerts} alert{monitor._count.alerts !== 1 ? "s" : ""}</span>
+                  <span>Grace: {monitor.gracePeriod >= 3600 ? `${monitor.gracePeriod / 3600}h` : `${monitor.gracePeriod / 60}m`}</span>
                 </div>
               </div>
             ))}
