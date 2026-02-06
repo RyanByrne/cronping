@@ -42,7 +42,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create checkout session
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://cronping.dev"
+    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://cronping.dev"
+    // Clean up the URL - remove trailing slashes and whitespace
+    baseUrl = baseUrl.trim().replace(/\/+$/, "")
+    // Ensure it starts with https://
+    if (!baseUrl.startsWith("http")) {
+      baseUrl = `https://${baseUrl}`
+    }
 
     const session = await getStripe().checkout.sessions.create({
       customer: customerId,
