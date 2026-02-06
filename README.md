@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CronPing
 
-## Getting Started
-
-First, run the development server:
+Cron jobs don't fail loudly. They just stop running.
+CronPing alerts you when a cron job doesn't run.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Run backup every hour, then ping CronPing
+0 * * * * /scripts/backup.sh && curl -fsS https://cronping.dev/ping/YOUR_ID
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## What it does
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- You get a unique URL
+- Your cron job pings it when it runs
+- If the ping doesn't arrive in time, you get alerted
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What it does NOT do
 
-## Learn More
+CronPing does not:
 
-To learn more about Next.js, take a look at the following resources:
+- monitor servers
+- track metrics
+- provide dashboards you won't check
+- replace full observability tools
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How to use it
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Create a monitor
+2. Add the ping URL to your cron job
+3. Get an alert if the ping doesn't arrive
 
-## Deploy on Vercel
+## Alerts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Alerts are sent via email.
+Slack is supported on paid plans.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Pricing
+
+CronPing is free for small usage.
+Paid plans exist for higher limits and Slack alerts.
+See [pricing](https://cronping.dev#pricing).
+
+## Why this exists
+
+I built this after multiple cron jobs failed silently in production.
+I wanted the smallest possible tool that tells me when nothing happened.
+
+## Get started
+
+https://cronping.dev

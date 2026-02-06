@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Monitor {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique // The unique ping endpoint slug
+  schedule    String?  // Human readable (e.g., "every 5 minutes")
+  gracePeriod Int      @default(300) // Seconds before alerting (default 5 min)
+  email       String   // Alert destination
+  status      String   @default("new") // new, up, down, paused
+  lastPing    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  pings  Ping[]
+  alerts Alert[]
+}
+
+model Ping {
+  id        String   @id @default(cuid())
+  monitorId String
+  monitor   Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  source    String?  // IP or user agent
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  monitorId String
+  monitor   Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  type      String   // "down" or "up"
+  sentAt    DateTime @default(now())
+}
