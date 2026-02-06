@@ -137,7 +137,7 @@ export default function DashboardPage() {
     if (!confirm("Are you sure you want to delete this monitor?")) return
 
     try {
-      await fetch(`/api/monitors/${id}`, { method: "DELETE" })
+      await fetch(`/api/monitors/${id}?email=${encodeURIComponent(userEmail)}`, { method: "DELETE" })
       fetchMonitors(userEmail)
     } catch (error) {
       console.error("Error deleting monitor:", error)

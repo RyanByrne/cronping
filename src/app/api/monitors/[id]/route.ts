@@ -43,7 +43,21 @@ export async function PUT(
 
   try {
     const body = await request.json()
-    const { name, email, schedule, gracePeriod, status } = body
+    const { name, email, schedule, gracePeriod, status, ownerEmail } = body
+
+    // First verify ownership
+    const existingMonitor = await prisma.monitor.findUnique({
+      where: { id },
+      select: { email: true },
+    })
+
+    if (!existingMonitor) {
+      return NextResponse.json({ error: "Monitor not found" }, { status: 404 })
+    }
+
+    if (!ownerEmail || existingMonitor.email !== ownerEmail) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
 
     const monitor = await prisma.monitor.update({
       where: { id },
@@ -70,7 +84,24 @@ export async function DELETE(
 ) {
   const { id } = await params
 
+  // Get email from query param for ownership verification
+  const email = request.nextUrl.searchParams.get("email")
+
   try {
+    // First verify ownership
+    const monitor = await prisma.monitor.findUnique({
+      where: { id },
+      select: { email: true },
+    })
+
+    if (!monitor) {
+      return NextResponse.json({ error: "Monitor not found" }, { status: 404 })
+    }
+
+    if (!email || monitor.email !== email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
+
     await prisma.monitor.delete({
       where: { id },
     })

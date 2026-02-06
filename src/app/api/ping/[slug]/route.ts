@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { sendUpAlert } from "@/lib/email"
+import { formatDistanceToNow } from "date-fns"
 
 export async function GET(
   request: NextRequest,
@@ -43,8 +45,29 @@ export async function GET(
       },
     })
 
-    // If it was down and is now up, we might want to send a recovery alert
-    // (handled by the background checker)
+    // If it was down and is now up, send a recovery alert
+    if (wasDown) {
+      // Get the last down alert to calculate downtime
+      const lastDownAlert = await prisma.alert.findFirst({
+        where: { monitorId: monitor.id, type: "down" },
+        orderBy: { sentAt: "desc" },
+      })
+
+      const downDuration = lastDownAlert
+        ? formatDistanceToNow(lastDownAlert.sentAt)
+        : "unknown duration"
+
+      // Record recovery alert
+      await prisma.alert.create({
+        data: {
+          monitorId: monitor.id,
+          type: "up",
+        },
+      })
+
+      // Send recovery email
+      await sendUpAlert(monitor.email, monitor.name, downDuration)
+    }
 
     return NextResponse.json({
       status: "ok",
@@ -79,6 +102,11 @@ export async function HEAD(
 
     if (!monitor) {
       return new NextResponse(null, { status: 404 })
+    }
+
+    // Don't record ping for paused monitors
+    if (monitor.status === "paused") {
+      return new NextResponse(null, { status: 200 })
     }
 
     // Record the ping silently

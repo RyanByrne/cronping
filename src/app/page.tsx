@@ -13,7 +13,7 @@ export default function Home() {
         </div>
         <nav className="flex items-center gap-6">
           <a
-            href="https://github.com/yourusername/cronping"
+            href="https://github.com/RyanByrne/cronping"
             className="text-zinc-400 hover:text-white transition-colors"
             target="_blank"
             rel="noopener noreferrer"
@@ -149,10 +149,10 @@ export default function Home() {
                   <span className="text-emerald-400">✓</span> Unlimited monitors
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-400">✓</span> Email + Slack
+                  <span className="text-emerald-400">✓</span> Email alerts
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-400">✓</span> 30-second checks
+                  <span className="text-emerald-400">✓</span> Priority support
                 </li>
               </ul>
               <Link
