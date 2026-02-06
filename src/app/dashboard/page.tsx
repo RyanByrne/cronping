@@ -156,7 +156,8 @@ export default function DashboardPage() {
       if (data.url) {
         window.location.href = data.url
       } else {
-        alert("Failed to start checkout. Please try again.")
+        const errorDetail = data.details ? `\n\nError: ${data.details}` : ""
+        alert(`Failed to start checkout. Please try again.${errorDetail}`)
       }
     } catch (error) {
       console.error("Checkout error:", error)
